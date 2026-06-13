@@ -15,7 +15,9 @@ async fn main() -> anyhow::Result<()> {
     let _telemetry = telemetry::init(cfg.otel_enabled, cfg.otel_endpoint.as_deref())
         .context("init telemetry")?;
 
-    rustls::crypto::ring::default_provider()
+    // Install the process-wide rustls crypto provider (kube/axum-server use the default provider,
+    // aws-lc-rs, for their TLS).
+    rustls::crypto::aws_lc_rs::default_provider()
         .install_default()
         .ok();
 

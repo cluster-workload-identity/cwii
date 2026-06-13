@@ -3,11 +3,20 @@
 [advisories]
 version = 2
 yanked = "deny"
-ignore = []
+# RUSTSEC-2025-0134: rustls-pemfile is unmaintained (informational, not a vulnerability).
+# It is pulled in only transitively via axum-server and kube-client, neither of which has migrated
+# to rustls-pki-types yet, so no safe upgrade is available. Accept the unmaintained status until an
+# upstream release drops the dependency.
+# Note: `ignore` suppresses unmaintained advisories too, and works on every v2-era cargo-deny
+# version — unlike the `[advisories].unmaintained` field, which was removed in 0.16.0 and only
+# re-added in 0.18.2.
+ignore = [
+  { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile unmaintained; only a transitive dep of axum-server/kube-client, no safe upgrade available" },
+]
 
 [licenses]
 version = 2
-# Permissive licenses we accept across the dependency tree.
+# Permissive licenses actually encountered in the dependency tree.
 allow = [
   "Apache-2.0",
   "Apache-2.0 WITH LLVM-exception",
@@ -16,18 +25,9 @@ allow = [
   "BSD-3-Clause",
   "ISC",
   "Unicode-3.0",
-  "Unicode-DFS-2016",
-  "Zlib",
-  "MPL-2.0",
   "CC0-1.0",
-  "OpenSSL",
 ]
 confidence-threshold = 0.9
-
-[[licenses.exceptions]]
-# ring bundles its own license terms.
-name = "ring"
-allow = ["OpenSSL"]
 
 [bans]
 multiple-versions = "warn"

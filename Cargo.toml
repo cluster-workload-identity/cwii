@@ -18,15 +18,15 @@ cwii-provider-gcp = { path = "crates/cwii-provider-gcp", version = "0.1.0" }
 cwii-provider-aws = { path = "crates/cwii-provider-aws", version = "0.1.0" }
 cwii-provider-az = { path = "crates/cwii-provider-az", version = "0.1.0" }
 
-# External dependencies (dependabot proposes upgrades).
+# External crates.
 anyhow = "1"
-axum = "0.7"
-axum-server = { version = "0.7", features = ["tls-rustls"] }
+axum = "0.8"
+axum-server = { version = "0.8", features = ["tls-rustls"] }
 clap = { version = "4", features = ["derive", "env"] }
 hex = "0.4"
-json-patch = "2"
-k8s-openapi = { version = "0.23", features = ["latest"] }
-kube = { version = "0.95", default-features = false, features = [
+json-patch = "4"
+k8s-openapi = { version = "0.27", features = ["latest"] }
+kube = { version = "3", default-features = false, features = [
   "client",
   "rustls-tls",
   "admission",
@@ -41,8 +41,8 @@ opentelemetry-otlp = { version = "0.32", default-features = false, features = [
 rustls = "0.23"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha2 = "0.10"
-thiserror = "1"
+sha2 = "0.11"
+thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
 tracing = "0.1"
 tracing-opentelemetry = "0.33"

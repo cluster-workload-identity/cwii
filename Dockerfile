@@ -19,8 +19,9 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 # Build dependencies (cached) then the workspace binary.
 FROM chef AS builder
+# cmake + clang are needed to build aws-lc-sys (the aws-lc-rs rustls crypto backend).
 RUN apt-get update \
- && apt-get install -y --no-install-recommends pkg-config \
+ && apt-get install -y --no-install-recommends pkg-config cmake clang libclang-dev \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=planner /src/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
