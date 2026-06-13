@@ -260,7 +260,7 @@ kubectl label namespace team-payments cwii.dev/enabled=true
 This is the most important security control. Projected ServiceAccount tokens are
 standard OIDC JWTs whose subject is:
 
-```
+```text
 sub = system:serviceaccount:<NAMESPACE>:<SERVICEACCOUNT>
 ```
 

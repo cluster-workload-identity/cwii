@@ -43,21 +43,21 @@ providers:
     # RBAC) or "initContainer" (a small init container writes it; no cluster writes).
     deliveryMode: configMap
     # -- Image for the init container that writes credentials.json (deliveryMode=initContainer).
-    initImage: busybox:stable
+    initImage: busybox:1.38.0
     # -- Image for the optional cwii.dev/gcp-verify "can-i" init container.
-    verifyImage: google/cloud-sdk:slim
+    verifyImage: google/cloud-sdk:572.0.0-slim
   aws:
     enabled: true
     # -- Default projected-token audience AWS STS expects.
     defaultAudience: sts.amazonaws.com
     # -- Image for the optional cwii.dev/aws-verify "can-i" init container.
-    verifyImage: amazon/aws-cli:latest
+    verifyImage: amazon/aws-cli:2.35.4
   az:
     enabled: true
     # -- Default projected-token audience for Microsoft Entra ID token exchange.
     defaultAudience: api://AzureADTokenExchange
     # -- Image for the optional cwii.dev/az-verify "can-i" init container.
-    verifyImage: mcr.microsoft.com/azure-cli:latest
+    verifyImage: mcr.microsoft.com/azure-cli:2.84.0
 
 # -- Compatibility: also read managed-platform "native" identity annotations
 # (iam.gke.io/gcp-service-account, eks.amazonaws.com/role-arn, azure.workload.identity/{client-id,

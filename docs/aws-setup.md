@@ -95,7 +95,7 @@ aws iam create-open-id-connect-provider \
 
 Note the returned provider ARN — you will reference it in the trust policy:
 
-```
+```text
 arn:aws:iam::123456789012:oidc-provider/oidc.example.com/my-cluster
 ```
 
@@ -186,7 +186,7 @@ aws iam attach-role-policy \
 
 The resulting role ARN is what cwii needs:
 
-```
+```text
 arn:aws:iam::123456789012:role/cwii-my-app
 ```
 

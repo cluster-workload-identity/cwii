@@ -294,7 +294,7 @@ The token file therefore lands at `/var/run/secrets/cwii.dev/az/token`, exactly 
 
 ---
 
-## Step 6 — Verify the injection
+## Step 6: Verify the injection
 
 Set `cwii.dev/az-verify: "true"` to have cwii add a `can-i` init container named `cwii-az-verify`.
 It runs (using the image `mcr.microsoft.com/azure-cli:latest` by default):

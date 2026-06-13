@@ -202,7 +202,7 @@ details.
 
 cwii resolves each annotation from four scopes, in this order:
 
-```
+```text
 pod  >  owning workload  >  ServiceAccount  >  namespace
 ```
 

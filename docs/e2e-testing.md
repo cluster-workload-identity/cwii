@@ -23,7 +23,7 @@ The trick that makes this CI-able and repeatable:
    federation succeeds (the enforcing init container runs `aws sts get-caller-identity` /
    `gcloud auth application-default print-access-token` / `az account show` and blocks otherwise).
 
-```
+```text
 GitHub Actions runner
   └─ kind cluster (apiserver issuer = https://storage.googleapis.com/<bucket>,
      │                signing key = OIDC_SIGNING_KEY secret)

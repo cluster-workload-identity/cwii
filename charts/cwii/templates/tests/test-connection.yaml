@@ -12,7 +12,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: healthz
-      image: curlimages/curl:latest
+      image: curlimages/curl:8.20.0
       # The webhook serves HTTPS with its own cert; -k is sufficient for a liveness check.
       command:
         - curl

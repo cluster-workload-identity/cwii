@@ -1,5 +1,5 @@
 //! Kubernetes reads (owner / ServiceAccount / namespace annotations) and the ConfigMap upsert used
-//! by GCP ConfigMap delivery. Ported from the gwii demo and generalized.
+//! by GCP ConfigMap delivery.
 
 use std::collections::BTreeMap;
 

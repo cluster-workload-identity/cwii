@@ -34,9 +34,11 @@ spec:
     {{- if .Values.tls.certManager.issuer.name }}
     name: {{ .Values.tls.certManager.issuer.name }}
     kind: {{ .Values.tls.certManager.issuer.kind }}
-    {{- else }}
+    {{- else if .Values.tls.certManager.createIssuer }}
     name: {{ include "cwii.fullname" . }}-selfsigned
     kind: Issuer
+    {{- else }}
+    {{- fail "tls.certManager: set tls.certManager.issuer.name or enable tls.certManager.createIssuer" }}
     {{- end }}
     group: cert-manager.io
 {{- end }}

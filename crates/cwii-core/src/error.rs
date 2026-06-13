@@ -20,11 +20,12 @@ pub enum Error {
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
+        // The detailed error is logged but never returned: 5xx responses expose only a generic
+        // message so internal details (cluster errors, patch internals) don't leak to clients.
         tracing::warn!(error = %self, "webhook request failed");
-        let status = match &self {
-            Error::BadRequest(_) => StatusCode::BAD_REQUEST,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-        (status, self.to_string()).into_response()
+        match self {
+            Error::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg).into_response(),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, "internal server error").into_response(),
+        }
     }
 }

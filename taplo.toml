@@ -1,5 +1,5 @@
 # taplo (TOML) formatting configuration. CI runs `taplo fmt --check`; run `taplo fmt` locally.
-# Scope to our own TOML (the archived old/ demo and build dirs are intentionally left alone).
+# Format only the workspace's own TOML files.
 include = [
   "Cargo.toml",
   "crates/**/Cargo.toml",

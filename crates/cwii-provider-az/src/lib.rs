@@ -33,7 +33,7 @@ impl Default for AzConfig {
     fn default() -> Self {
         Self {
             default_audience: "api://AzureADTokenExchange".to_string(),
-            verify_image: "mcr.microsoft.com/azure-cli:latest".to_string(),
+            verify_image: "mcr.microsoft.com/azure-cli:2.84.0".to_string(),
             native_annotations: false,
         }
     }

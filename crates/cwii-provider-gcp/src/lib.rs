@@ -62,8 +62,8 @@ impl Default for GcpConfig {
         Self {
             default_audience: None,
             delivery: GcpDelivery::ConfigMap,
-            init_image: "busybox:stable".to_string(),
-            verify_image: "google/cloud-sdk:slim".to_string(),
+            init_image: "busybox:1.38.0".to_string(),
+            verify_image: "google/cloud-sdk:572.0.0-slim".to_string(),
             native_annotations: false,
         }
     }
@@ -124,11 +124,12 @@ impl Provider for GcpProvider {
         let creds_dir = format!("{root}/gcp-creds");
         let creds_file = format!("{creds_dir}/{CREDS_FILENAME}");
 
-        let delivery = ctx
-            .annotations
-            .first_non_empty(K_DELIVERY)
-            .and_then(|s| GcpDelivery::from_str(s).ok())
-            .unwrap_or(self.cfg.delivery);
+        // An explicit but invalid cwii.dev/gcp-delivery value is a configuration error, not a
+        // silent fall-through to the server default.
+        let delivery = match ctx.annotations.first_non_empty(K_DELIVERY) {
+            Some(s) => GcpDelivery::from_str(s).map_err(|e| anyhow::anyhow!(e))?,
+            None => self.cfg.delivery,
+        };
 
         let mut volumes = vec![token.volume()];
         let mut container_mounts = vec![token.mount()];

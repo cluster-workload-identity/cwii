@@ -61,13 +61,13 @@ pub struct Config {
     #[arg(long, env = "CWII_GCP_DELIVERY", default_value = "config-map")]
     pub gcp_delivery: String,
 
-    #[arg(long, env = "CWII_GCP_INIT_IMAGE", default_value = "busybox:stable")]
+    #[arg(long, env = "CWII_GCP_INIT_IMAGE", default_value = "busybox:1.38.0")]
     pub gcp_init_image: String,
 
     #[arg(
         long,
         env = "CWII_GCP_VERIFY_IMAGE",
-        default_value = "google/cloud-sdk:slim"
+        default_value = "google/cloud-sdk:572.0.0-slim"
     )]
     pub gcp_verify_image: String,
 
@@ -85,7 +85,7 @@ pub struct Config {
     #[arg(
         long,
         env = "CWII_AWS_VERIFY_IMAGE",
-        default_value = "amazon/aws-cli:latest"
+        default_value = "amazon/aws-cli:2.35.4"
     )]
     pub aws_verify_image: String,
 
@@ -103,7 +103,7 @@ pub struct Config {
     #[arg(
         long,
         env = "CWII_AZ_VERIFY_IMAGE",
-        default_value = "mcr.microsoft.com/azure-cli:latest"
+        default_value = "mcr.microsoft.com/azure-cli:2.84.0"
     )]
     pub az_verify_image: String,
 }

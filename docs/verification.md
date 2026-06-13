@@ -120,6 +120,8 @@ spec:
 > `cwii.dev/<p>-verify: "true"`. Enforcement controls *how* the verify container
 > runs; it does not add one on its own.
 
+<!-- -->
+
 > [!CAUTION]
 > An enforced verify makes your pod's startup depend on a live cloud STS call.
 > If the cloud STS endpoint is throttling or unreachable, enforced pods will be
@@ -233,10 +235,10 @@ logged to stderr and the container still exits `0` (so the pod starts anyway):
 ```text
 An error occurred (AccessDenied) when calling the AssumeRoleWithWebIdentity operation:
 Not authorized to perform sts:AssumeRoleWithWebIdentity
-cwii: aws verify failed (non-enforcing); see message above
+cwii: verification check failed (non-enforcing)
 ```
 
-The trailing `cwii: ... verify failed (non-enforcing)` line is the `|| echo`
+The trailing `cwii: verification check failed (non-enforcing)` line is the `|| echo`
 fallback that keeps the init container green.
 
 ### Example: failure (enforcing)

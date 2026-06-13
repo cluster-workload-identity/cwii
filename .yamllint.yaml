@@ -5,7 +5,6 @@ extends: default
 ignore: |
   charts/cwii/templates/
   charts/cwii/ci/
-  old/
   target/
 
 rules:

@@ -12,7 +12,7 @@ gets its **own** projected ServiceAccount token (different clouds need different
 
 ## Repository layout
 
-```
+```text
 crates/
   cwii-core/          # provider-agnostic engine: Provider trait, plan IR, resolve, patch, admission, k8s
   cwii-provider-gcp/  # GCP external_account credentials.json + configMap/initContainer delivery

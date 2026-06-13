@@ -18,7 +18,7 @@ cwii-provider-gcp = { path = "crates/cwii-provider-gcp", version = "0.1.0" }
 cwii-provider-aws = { path = "crates/cwii-provider-aws", version = "0.1.0" }
 cwii-provider-az = { path = "crates/cwii-provider-az", version = "0.1.0" }
 
-# External — pins carried over from the proven gwii demo (dependabot proposes upgrades).
+# External dependencies (dependabot proposes upgrades).
 anyhow = "1"
 axum = "0.7"
 axum-server = { version = "0.7", features = ["tls-rustls"] }

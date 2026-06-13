@@ -1,6 +1,5 @@
 //! Admission orchestration: resolve annotations, consult each provider, merge the plans, perform
-//! side effects (honoring dry-run), and build the patch. Ported from the gwii demo and generalized
-//! to multiple providers.
+//! side effects (honoring dry-run), and build the patch.
 
 use std::time::Instant;
 
@@ -50,21 +49,27 @@ pub async fn mutate<S: WebhookState>(
                     Ok(r) => (r, "inject"),
                     Err(e) => {
                         tracing::error!(error = %e, "failed to serialize patch");
-                        let denied =
-                            AdmissionResponse::from(&req).deny(format!("patch serialize: {e}"));
-                        (denied, "patch_error")
+                        (
+                            AdmissionResponse::from(&req).deny("invalid patch"),
+                            "patch_error",
+                        )
                     }
                 },
                 Err(e) => {
                     tracing::error!(error = %e, "failed to parse patch as json-patch");
-                    let denied = AdmissionResponse::from(&req).deny(format!("patch parse: {e}"));
-                    (denied, "patch_error")
+                    (
+                        AdmissionResponse::from(&req).deny("invalid patch"),
+                        "patch_error",
+                    )
                 }
             }
         }
         Err(e) => {
             tracing::error!(error = %e, "mutation failed");
-            (AdmissionResponse::from(&req).deny(e.to_string()), "deny")
+            (
+                AdmissionResponse::from(&req).deny("mutation failed"),
+                "deny",
+            )
         }
     };
 

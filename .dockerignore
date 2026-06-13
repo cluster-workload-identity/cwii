@@ -5,7 +5,6 @@ target/
 .cargo-home/
 charts/
 docs/
-old/
 dist/
 *.md
 *.tgz

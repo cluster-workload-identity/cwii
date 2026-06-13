@@ -37,7 +37,7 @@ Adding a provider is a small, self-contained crate implementing one trait — se
 
 ## How it works
 
-```
+```text
  kube-apiserver (OIDC issuer + signing key)
         │  publishes /.well-known/openid-configuration + JWKS over public HTTPS
         ▼

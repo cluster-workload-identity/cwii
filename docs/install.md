@@ -160,6 +160,7 @@ podDisruptionBudget:
 
 > [!CAUTION]
 > If you set `failurePolicy: Fail`, pair it with **all** of the following:
+>
 > - `replicaCount >= 2` so a single pod restart never makes the webhook unavailable,
 > - a `PodDisruptionBudget` so voluntary disruptions keep at least one replica serving,
 > - an **opt-in** `objectSelector` or `namespaceSelector.matchLabels` so the required webhook only governs the workloads you intend — not the whole cluster.

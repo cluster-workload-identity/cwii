@@ -30,5 +30,5 @@ updates:
       docker:
         patterns: ["*"]
 
-  # Note: Dependabot has no Helm ecosystem. The chart has no subchart dependencies, so there is
-  # nothing for it to bump. If chart dependencies are added later, use Renovate (helmv3 manager).
+# Note: Dependabot has no Helm ecosystem. The chart has no subchart dependencies, so there is
+# nothing for it to bump. If chart dependencies are added later, use Renovate (helmv3 manager).

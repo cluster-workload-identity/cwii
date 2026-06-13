@@ -1,0 +1,2 @@
+# Pinned docs toolchain for reproducible GitHub Pages builds (see .github/workflows/docs.yaml).
+mkdocs-material==9.7.6

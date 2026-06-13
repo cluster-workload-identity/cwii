@@ -30,7 +30,7 @@ impl Default for AwsConfig {
     fn default() -> Self {
         Self {
             default_audience: "sts.amazonaws.com".to_string(),
-            verify_image: "amazon/aws-cli:latest".to_string(),
+            verify_image: "amazon/aws-cli:2.35.4".to_string(),
             native_annotations: false,
         }
     }

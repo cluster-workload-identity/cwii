@@ -9,3 +9,6 @@ MD024:
   siblings_only: true
 # First line need not be a top-level heading (front-matter, badges).
 MD041: false
+# Don't enforce a single code-block style: the docs mix fenced and indented (list-nested) blocks
+# intentionally. Language tags are still required (MD040 stays on).
+MD046: false
