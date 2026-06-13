@@ -3,16 +3,6 @@
 [advisories]
 version = 2
 yanked = "deny"
-# RUSTSEC-2025-0134: rustls-pemfile is unmaintained (informational, not a vulnerability).
-# It is pulled in only transitively via axum-server and kube-client, neither of which has migrated
-# to rustls-pki-types yet, so no safe upgrade is available. Accept the unmaintained status until an
-# upstream release drops the dependency.
-# Note: `ignore` suppresses unmaintained advisories too, and works on every v2-era cargo-deny
-# version — unlike the `[advisories].unmaintained` field, which was removed in 0.16.0 and only
-# re-added in 0.18.2.
-ignore = [
-  { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile unmaintained; only a transitive dep of axum-server/kube-client, no safe upgrade available" },
-]
 
 [licenses]
 version = 2
