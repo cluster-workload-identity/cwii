@@ -99,6 +99,31 @@ Then per-cloud IAM setup: **[GCP](./docs/gcp-setup.md)** · **[AWS](./docs/aws-s
 
 Full site: **[cwii.dev](https://cwii.dev)**.
 
+## Related projects & prior art
+
+cwii builds on the OIDC token-federation approach pioneered by the per-cloud webhooks, and unifies
+it across providers for self-hosted clusters.
+
+- **Managed workload identity** — [GKE Workload Identity](https://cloud.google.com/kubernetes-engine/docs/concepts/workload-identity),
+  [EKS IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html),
+  [AKS Microsoft Entra Workload ID](https://learn.microsoft.com/azure/aks/workload-identity-overview).
+  cwii brings the same model to clusters that *aren't* on a managed platform — and can even read
+  those platforms' native annotations (`iam.gke.io/gcp-service-account`,
+  `eks.amazonaws.com/role-arn`, `azure.workload.identity/client-id`) for drop-in migration
+  (see [annotations](./docs/annotations.md)).
+- **Per-cloud OIDC webhooks** — [aws/amazon-eks-pod-identity-webhook](https://github.com/aws/amazon-eks-pod-identity-webhook)
+  and [Azure/azure-workload-identity](https://github.com/Azure/azure-workload-identity) inject the
+  same kind of env vars cwii does, but each handles a single cloud. cwii is one webhook for GCP **and**
+  AWS **and** Azure, with a separate projected token per provider.
+- **Metadata-proxy predecessors** — [kube2iam](https://github.com/jtblin/kube2iam) and
+  [kiam](https://github.com/uswitch/kiam) gave pods AWS credentials by intercepting the EC2 metadata
+  endpoint and calling `AssumeRole` from a node agent. They are AWS-only and tied to EC2; cwii instead
+  uses short-lived **OIDC token federation** (no metadata interception), which works across clouds on
+  any self-hosted cluster.
+
+cwii's niche: **one webhook, three clouds, self-hosted**, with per-provider projected tokens and
+optional in-cluster verification.
+
 ## Security
 
 No static long-lived secrets; credentials are short-lived federated tokens. Images and charts are

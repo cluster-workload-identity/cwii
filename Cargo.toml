@@ -27,16 +27,16 @@ hex = "0.4"
 json-patch = "2"
 k8s-openapi = { version = "0.23", features = ["latest"] }
 kube = { version = "0.95", default-features = false, features = [
-    "client",
-    "rustls-tls",
-    "admission",
+  "client",
+  "rustls-tls",
+  "admission",
 ] }
 opentelemetry = "0.32"
 opentelemetry_sdk = { version = "0.32", features = ["rt-tokio"] }
 opentelemetry-otlp = { version = "0.32", default-features = false, features = [
-    "grpc-tonic",
-    "trace",
-    "metrics",
+  "grpc-tonic",
+  "trace",
+  "metrics",
 ] }
 rustls = "0.23"
 serde = { version = "1", features = ["derive"] }
