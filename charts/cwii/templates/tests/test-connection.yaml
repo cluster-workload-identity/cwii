@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "cwii.fullname" . }}-test-connection
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cwii.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: healthz
+      image: curlimages/curl:latest
+      # The webhook serves HTTPS with its own cert; -k is sufficient for a liveness check.
+      command:
+        - curl
+      args:
+        - --silent
+        - --show-error
+        - --fail
+        - --insecure
+        - https://{{ include "cwii.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.port }}/healthz
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL

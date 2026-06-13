@@ -1,0 +1,23 @@
+# Codecov configuration. Coverage is uploaded by the `coverage` job in ci.yaml (cargo-llvm-cov).
+# For private repos set a CODECOV_TOKEN repo secret; public repos can upload tokenless.
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: true # report coverage; never block a PR on it
+    patch:
+      default:
+        informational: true
+
+comment:
+  layout: "reach, diff, files"
+  require_changes: true
+
+# Don't count non-logic wiring / tests toward coverage.
+ignore:
+  - "crates/cwii/src/main.rs"
+  - "crates/cwii/src/telemetry.rs"
+  - "**/tests/**"
+  - "old/**"

@@ -1,0 +1,46 @@
+cwii (Cluster Workload Identity Injector) {{ .Chart.AppVersion }} is installed in namespace {{ .Release.Namespace }}.
+
+Enabled providers:
+{{- if .Values.providers.gcp.enabled }}
+  • gcp  (delivery: {{ .Values.providers.gcp.deliveryMode }})
+{{- end }}
+{{- if .Values.providers.aws.enabled }}
+  • aws
+{{- end }}
+{{- if .Values.providers.az.enabled }}
+  • az
+{{- end }}
+
+Opt a workload in with annotations (pod > owner > serviceAccount > namespace), e.g.:
+
+  metadata:
+    annotations:
+      cwii.dev/gcp-inject: "true"
+      cwii.dev/gcp-audience: "//iam.googleapis.com/projects/NUM/locations/global/workloadIdentityPools/POOL/providers/PROV"
+      # cwii.dev/gcp-service-account: "gsa@PROJECT.iam.gserviceaccount.com"   # impersonation (optional)
+
+      cwii.dev/aws-inject: "true"
+      cwii.dev/aws-role-arn: "arn:aws:iam::123456789012:role/my-app"
+
+      cwii.dev/az-inject: "true"
+      cwii.dev/az-client-id: "<app-registration-client-id>"
+      cwii.dev/az-tenant-id: "<entra-tenant-id>"
+
+      # Optional "can-i" verification init container (non-blocking by default):
+      # cwii.dev/aws-verify: "true"
+      # cwii.dev/aws-verify-enforce: "true"   # block pod start if the check fails
+
+Each enabled provider gets its own projected ServiceAccount token at
+{{ .Values.mountRoot }}/<provider>/token.
+
+{{- if eq .Values.webhook.failurePolicy "Fail" }}
+
+WARNING: webhook.failurePolicy is "Fail". Pod creation in selected namespaces will be BLOCKED if
+this webhook is unavailable. The release namespace, kube-system and kube-node-lease are excluded by
+default; keep the PodDisruptionBudget enabled and replicaCount >= 2.
+{{- end }}
+
+Verify the webhook is serving:
+  helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+Docs: https://cwii.dev

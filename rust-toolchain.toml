@@ -1,0 +1,5 @@
+# Build, clippy and test run on stable. `cargo fmt` requires nightly because rustfmt.toml enables
+# `unstable_features = true`; CI installs nightly only for the fmt job (`cargo +nightly fmt`).
+[toolchain]
+channel = "stable"
+components = ["clippy", "rustfmt"]

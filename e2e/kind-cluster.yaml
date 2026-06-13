@@ -1,0 +1,31 @@
+# kind cluster configured to act as an OIDC identity provider for cwii end-to-end tests.
+#
+# Targets Kubernetes 1.30 (kubeadm v1beta3, where apiServer.extraArgs is a MAP that cleanly OVERRIDES
+# the kind defaults — on 1.31+/v1beta4 extraArgs is a list that appends, which collides with the
+# default issuer flag; see docs/e2e-testing.md to adapt).
+#
+# Placeholders are substituted before `kind create`:
+#   __OIDC_DIR__   host directory holding sa.key (the fixed signing key) and sa.pub
+#   __ISSUER_URL__ the stable public issuer, e.g. https://storage.googleapis.com/<bucket>
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraMounts:
+      # Replace the cluster's ServiceAccount signing keypair with our fixed one, so projected tokens
+      # are signed by the key whose public JWKS is published at the issuer URL. The key-file flags are
+      # left at their defaults (/etc/kubernetes/pki/sa.{key,pub}) — we only swap the file contents.
+      - hostPath: __OIDC_DIR__/sa.key
+        containerPath: /etc/kubernetes/pki/sa.key
+        readOnly: true
+      - hostPath: __OIDC_DIR__/sa.pub
+        containerPath: /etc/kubernetes/pki/sa.pub
+        readOnly: true
+    kubeadmConfigPatches:
+      - |
+        apiVersion: kubeadm.k8s.io/v1beta3
+        kind: ClusterConfiguration
+        apiServer:
+          extraArgs:
+            service-account-issuer: __ISSUER_URL__
+            service-account-jwks-uri: __ISSUER_URL__/openid/v1/jwks

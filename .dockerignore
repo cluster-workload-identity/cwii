@@ -1,0 +1,22 @@
+# The build needs Cargo.toml, Cargo.lock and crates/ only. Keep the build context small and stable.
+target/
+.git/
+.github/
+.cargo-home/
+charts/
+docs/
+old/
+dist/
+*.md
+*.tgz
+.gitignore
+.dockerignore
+Dockerfile
+.yamllint.yaml
+.markdownlint.yaml
+.hadolint.yaml
+deny.toml
+.vscode/
+.idea/
+.DS_Store
+**/*.rs.bk

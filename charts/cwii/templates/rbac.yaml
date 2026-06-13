@@ -1,0 +1,40 @@
+{{- if .Values.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "cwii.fullname" . }}
+  labels:
+    {{- include "cwii.labels" . | nindent 4 }}
+rules:
+  # Read annotations from namespaces, ServiceAccounts and owning workloads.
+  - apiGroups: [""]
+    resources: ["namespaces", "serviceaccounts"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch"]
+  {{- if eq (include "cwii.gcpConfigMapMode" .) "true" }}
+  # ConfigMap write is only needed for GCP "configMap" credentials delivery.
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "update", "patch"]
+  {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "cwii.fullname" . }}
+  labels:
+    {{- include "cwii.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "cwii.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "cwii.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

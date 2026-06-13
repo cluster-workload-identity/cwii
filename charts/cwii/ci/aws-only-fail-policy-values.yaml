@@ -1,0 +1,14 @@
+# AWS-only install with a required (Fail) webhook — exercises least-privilege RBAC (no ConfigMap
+# write) and the deadlock-safe namespaceSelector defaults.
+providers:
+  gcp:
+    enabled: false
+  aws:
+    enabled: true
+  az:
+    enabled: false
+webhook:
+  failurePolicy: Fail
+  namespaceSelector:
+    matchLabels:
+      cwii.dev/inject: enabled

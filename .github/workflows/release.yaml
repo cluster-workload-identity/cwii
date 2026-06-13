@@ -1,0 +1,129 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/cwii
+
+# Actions pinned to commit SHAs (tag in the trailing comment); Dependabot keeps them current.
+jobs:
+  image:
+    name: build, push & sign image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # cosign keyless signing + provenance attestation
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Optional mirror to Docker Hub. Enable by setting the repo variable DOCKERHUB_PUSH=true and the
+      # secrets DOCKERHUB_USERNAME / DOCKERHUB_TOKEN (optionally DOCKERHUB_NAMESPACE to override the org).
+      - name: Login to Docker Hub (optional mirror)
+        if: ${{ vars.DOCKERHUB_PUSH == 'true' }}
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Compute target registries
+        id: registries
+        env:
+          DOCKERHUB_NS: ${{ vars.DOCKERHUB_NAMESPACE || github.repository_owner }}
+        run: |
+          {
+            echo "images<<EOF"
+            echo "${REGISTRY}/${IMAGE_NAME}"
+            if [ "${{ vars.DOCKERHUB_PUSH }}" = "true" ]; then
+              echo "docker.io/${DOCKERHUB_NS}/cwii"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ${{ steps.registries.outputs.images }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+          labels: |
+            org.opencontainers.image.title=cwii
+            org.opencontainers.image.description=Cluster Workload Identity Injector
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.url=https://cwii.dev
+            org.opencontainers.image.licenses=Apache-2.0
+      - id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          sbom: true
+          provenance: mode=max
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
+      - name: Sign image (keyless)
+        run: cosign sign --yes "${REGISTRY}/${IMAGE_NAME}@${DIGEST}"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+      - name: Sign Docker Hub image (keyless)
+        if: ${{ vars.DOCKERHUB_PUSH == 'true' }}
+        # Same manifest is pushed to both registries, so the digest is identical.
+        run: cosign sign --yes "docker.io/${DOCKERHUB_NS}/cwii@${DIGEST}"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          DOCKERHUB_NS: ${{ vars.DOCKERHUB_NAMESPACE || github.repository_owner }}
+      - name: Scan released image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: "0" # report only; do not fail an already-published release
+
+  chart:
+    name: package, push & sign chart
+    runs-on: ubuntu-latest
+    needs: image
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login "${REGISTRY}" -u "${{ github.actor }}" --password-stdin
+      - name: Package and push chart (OCI)
+        id: pkg
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          helm package charts/cwii --version "$VERSION" --app-version "$VERSION" --destination dist/
+          OUT=$(helm push "dist/cwii-${VERSION}.tgz" "oci://${REGISTRY}/${{ github.repository_owner }}/charts" 2>&1)
+          echo "$OUT"
+          DIGEST=$(echo "$OUT" | awk '/Digest:/ {print $2}')
+          echo "ref=${REGISTRY}/${{ github.repository_owner }}/charts/cwii@${DIGEST}" >> "$GITHUB_OUTPUT"
+      - name: Sign chart (keyless)
+        run: cosign sign --yes "${{ steps.pkg.outputs.ref }}"

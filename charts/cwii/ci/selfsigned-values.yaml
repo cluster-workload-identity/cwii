@@ -1,0 +1,6 @@
+# Self-signed fallback path (no cert-manager): the chart templates the Secret and caBundle.
+tls:
+  certManager:
+    enabled: false
+  selfSigned:
+    durationDays: 365

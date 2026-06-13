@@ -1,0 +1,22 @@
+# yamllint configuration. Helm templates are Go-templated and not valid YAML, so they are excluded
+# here and validated instead by `helm template | kubeconform` in CI.
+extends: default
+
+ignore: |
+  charts/cwii/templates/
+  charts/cwii/ci/
+  old/
+  target/
+
+rules:
+  line-length:
+    max: 120
+    level: warning
+  document-start: disable
+  truthy:
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  indentation:
+    spaces: 2
+    indent-sequences: consistent

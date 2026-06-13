@@ -1,0 +1,174 @@
+# -- Container image. Registry/org/name are overridable; defaults to ghcr.io/cluster-workload-identity/cwii.
+image:
+  repository: ghcr.io/cluster-workload-identity/cwii
+  # -- Image tag. Defaults to the chart appVersion when empty.
+  tag: ""
+  pullPolicy: IfNotPresent
+# -- Image pull secrets for private registries.
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -- Number of webhook replicas. Keep >=2 for availability, especially with failurePolicy=Fail.
+replicaCount: 2
+
+# -- RUST_LOG filter, e.g. "info" or "cwii=debug,info".
+logLevel: info
+
+# -- Root directory for cwii-managed mounts inside injected pods.
+mountRoot: /var/run/secrets/cwii.dev
+
+# -- Default projected ServiceAccount token lifetime (seconds). Kubernetes minimum is 600.
+tokenExpirationSeconds: 3600
+
+# -- OpenTelemetry traces + metrics over OTLP. Point `endpoint` at an OTel Collector (which can then
+# fan out to Prometheus/Tempo/etc.). Empty endpoint falls back to the standard
+# OTEL_EXPORTER_OTLP_ENDPOINT environment variable.
+otel:
+  enabled: false
+  endpoint: "" # e.g. http://otel-collector.observability:4317
+
+# ---------------------------------------------------------------------------
+# Providers — which clouds are enabled and their server-level defaults. Every value here is
+# overridable per-workload via cwii.dev/* annotations.
+# ---------------------------------------------------------------------------
+providers:
+  gcp:
+    enabled: true
+    # -- Default GCP WIF audience (the workload identity pool provider resource). Overridable via
+    # cwii.dev/gcp-audience. If empty and no annotation supplies it, GCP injection is skipped.
+    defaultAudience: ""
+    # -- credentials.json delivery: "configMap" (webhook upserts a ConfigMap; needs ConfigMap-write
+    # RBAC) or "initContainer" (a small init container writes it; no cluster writes).
+    deliveryMode: configMap
+    # -- Image for the init container that writes credentials.json (deliveryMode=initContainer).
+    initImage: busybox:stable
+    # -- Image for the optional cwii.dev/gcp-verify "can-i" init container.
+    verifyImage: google/cloud-sdk:slim
+  aws:
+    enabled: true
+    # -- Default projected-token audience AWS STS expects.
+    defaultAudience: sts.amazonaws.com
+    # -- Image for the optional cwii.dev/aws-verify "can-i" init container.
+    verifyImage: amazon/aws-cli:latest
+  az:
+    enabled: true
+    # -- Default projected-token audience for Microsoft Entra ID token exchange.
+    defaultAudience: api://AzureADTokenExchange
+    # -- Image for the optional cwii.dev/az-verify "can-i" init container.
+    verifyImage: mcr.microsoft.com/azure-cli:latest
+
+# -- Compatibility: also read managed-platform "native" identity annotations
+# (iam.gke.io/gcp-service-account, eks.amazonaws.com/role-arn, azure.workload.identity/{client-id,
+# tenant-id}) as a fallback, so workloads migrated off GKE/EKS/AKS work unchanged. cwii.dev/*
+# annotations always take precedence. Off by default — explicit opt-in is the safe posture, and
+# enabling this lets the presence of a native annotation trigger injection.
+compat:
+  nativeAnnotations: false
+
+# ---------------------------------------------------------------------------
+# Webhook behaviour.
+# ---------------------------------------------------------------------------
+webhook:
+  # -- "Make the webhook required": Fail blocks pod creation if the webhook is unavailable; Ignore
+  # lets pods schedule without injection. Pair Fail with the namespaceSelector exclusions + PDB.
+  failurePolicy: Ignore
+  reinvocationPolicy: Never
+  matchPolicy: Equivalent
+  timeoutSeconds: 10
+  # -- The ConfigMap upsert (GCP configMap mode) is the only side effect; honored in dry-run.
+  sideEffects: NoneOnDryRun
+  namespaceSelector:
+    # -- Extra namespace names to exclude (added to the always-excluded release ns, kube-system,
+    # kube-node-lease).
+    excludeNamespaces: []
+    # -- Restrict the webhook to namespaces carrying these labels (opt-in). Empty = all but excluded.
+    matchLabels: {}
+  # -- Restrict to pods matching this label selector. Empty = all pods in selected namespaces.
+  objectSelector: {}
+  # -- Optional CEL match conditions (Kubernetes >= 1.28).
+  matchConditions: []
+
+# ---------------------------------------------------------------------------
+# TLS for the webhook server.
+# ---------------------------------------------------------------------------
+tls:
+  certManager:
+    # -- Use cert-manager to issue and rotate the webhook certificate (recommended).
+    enabled: true
+    # -- Create a self-signed Issuer when no existing issuer is referenced below.
+    createIssuer: true
+    issuer:
+      # -- Reference an existing Issuer/ClusterIssuer by name instead of creating one.
+      name: ""
+      kind: Issuer
+    duration: 8760h
+    renewBefore: 720h
+  selfSigned:
+    # -- Validity (days) of the Helm-generated certificate when certManager.enabled=false. This
+    # fallback does not auto-rotate; prefer cert-manager in production.
+    durationDays: 3650
+
+service:
+  type: ClusterIP
+  port: 443
+  targetPort: 8443
+  annotations: {}
+
+# ---------------------------------------------------------------------------
+# Workload hardening / scheduling.
+# ---------------------------------------------------------------------------
+# -- Resource requests/limits. The webhook is a tiny Rust binary that idles at ~15-30Mi; these
+# defaults are deliberately minimal. Following current guidance we set a CPU *request* but no CPU
+# *limit* (avoids CFS throttling on a latency-sensitive admission path) and cap memory with a limit.
+# Add a CPU limit if a namespace LimitRange or your policy requires one.
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+  # -- Set instead of minAvailable if preferred (mutually exclusive).
+  maxUnavailable: ""
+
+priorityClassName: ""
+topologySpreadConstraints: []
+affinity: {}
+nodeSelector: {}
+tolerations: []
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65532
+  capabilities:
+    drop:
+      - ALL
+
+networkPolicy:
+  # -- Create a NetworkPolicy allowing ingress to the webhook port (from the API server).
+  enabled: false
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}

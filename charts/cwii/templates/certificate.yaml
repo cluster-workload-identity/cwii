@@ -1,0 +1,42 @@
+{{- if .Values.tls.certManager.enabled }}
+{{- if and .Values.tls.certManager.createIssuer (not .Values.tls.certManager.issuer.name) }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "cwii.fullname" . }}-selfsigned
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cwii.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+---
+{{- end }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "cwii.certName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cwii.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "cwii.certName" . }}
+  duration: {{ .Values.tls.certManager.duration }}
+  renewBefore: {{ .Values.tls.certManager.renewBefore }}
+  subject:
+    organizations:
+      - cwii
+  dnsNames:
+    - {{ include "cwii.fullname" . }}
+    - {{ include "cwii.fullname" . }}.{{ .Release.Namespace }}
+    - {{ include "cwii.fullname" . }}.{{ .Release.Namespace }}.svc
+    - {{ include "cwii.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    {{- if .Values.tls.certManager.issuer.name }}
+    name: {{ .Values.tls.certManager.issuer.name }}
+    kind: {{ .Values.tls.certManager.issuer.kind }}
+    {{- else }}
+    name: {{ include "cwii.fullname" . }}-selfsigned
+    kind: Issuer
+    {{- end }}
+    group: cert-manager.io
+{{- end }}

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "cwii Helm values",
+  "type": "object",
+  "properties": {
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": { "type": "string" },
+        "tag": { "type": "string" },
+        "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+      }
+    },
+    "replicaCount": { "type": "integer", "minimum": 1 },
+    "logLevel": { "type": "string" },
+    "mountRoot": { "type": "string", "pattern": "^/" },
+    "tokenExpirationSeconds": { "type": "integer", "minimum": 600 },
+    "providers": {
+      "type": "object",
+      "properties": {
+        "gcp": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "defaultAudience": { "type": "string" },
+            "deliveryMode": { "type": "string", "enum": ["configMap", "initContainer"] },
+            "initImage": { "type": "string" },
+            "verifyImage": { "type": "string" }
+          }
+        },
+        "aws": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "defaultAudience": { "type": "string" },
+            "verifyImage": { "type": "string" }
+          }
+        },
+        "az": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "defaultAudience": { "type": "string" },
+            "verifyImage": { "type": "string" }
+          }
+        }
+      }
+    },
+    "webhook": {
+      "type": "object",
+      "properties": {
+        "failurePolicy": { "type": "string", "enum": ["Ignore", "Fail"] },
+        "reinvocationPolicy": { "type": "string", "enum": ["Never", "IfNeeded"] },
+        "matchPolicy": { "type": "string", "enum": ["Exact", "Equivalent"] },
+        "timeoutSeconds": { "type": "integer", "minimum": 1, "maximum": 30 },
+        "sideEffects": { "type": "string", "enum": ["None", "NoneOnDryRun"] }
+      }
+    },
+    "tls": {
+      "type": "object",
+      "properties": {
+        "certManager": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "createIssuer": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}
