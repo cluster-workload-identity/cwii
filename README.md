@@ -35,6 +35,14 @@ ServiceAccount token for short-lived cloud credentials.
 Adding a provider is a small, self-contained crate implementing one trait — see
 [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+## Supported Kubernetes versions
+
+cwii targets the upstream Kubernetes releases that are **not end-of-life**: **1.33, 1.34, 1.35, 1.36**.
+The Helm chart's `kubeVersion` enforces this range and CI exercises it. cwii relies only on
+generally-available APIs (mutating admission and projected ServiceAccount tokens), so it isn't tied
+to any single release — the support window simply tracks upstream as older releases age out (bump
+the chart's `kubeVersion` when the window moves).
+
 ## How it works
 
 ```text

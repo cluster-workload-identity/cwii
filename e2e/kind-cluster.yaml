@@ -1,8 +1,10 @@
 # kind cluster configured to act as an OIDC identity provider for cwii end-to-end tests.
 #
-# Targets Kubernetes 1.30 (kubeadm v1beta3, where apiServer.extraArgs is a MAP that cleanly OVERRIDES
-# the kind defaults — on 1.31+/v1beta4 extraArgs is a list that appends, which collides with the
-# default issuer flag; see docs/e2e-testing.md to adapt).
+# Targets a supported Kubernetes release (1.33+, kubeadm v1beta4, where apiServer.extraArgs is a LIST
+# of {name, value}). The custom --service-account-issuer must end up as the apiserver's EFFECTIVE
+# issuer; the e2e workflow asserts this right after cluster creation (the discovery document at
+# /.well-known/openid-configuration must report __ISSUER_URL__) and fails fast if a given kubeadm
+# build appends to, rather than overrides, the default issuer.
 #
 # Placeholders are substituted before `kind create`:
 #   __OIDC_DIR__   host directory holding sa.key (the fixed signing key) and sa.pub
@@ -23,9 +25,11 @@ nodes:
         readOnly: true
     kubeadmConfigPatches:
       - |
-        apiVersion: kubeadm.k8s.io/v1beta3
+        apiVersion: kubeadm.k8s.io/v1beta4
         kind: ClusterConfiguration
         apiServer:
           extraArgs:
-            service-account-issuer: __ISSUER_URL__
-            service-account-jwks-uri: __ISSUER_URL__/openid/v1/jwks
+            - name: service-account-issuer
+              value: __ISSUER_URL__
+            - name: service-account-jwks-uri
+              value: __ISSUER_URL__/openid/v1/jwks

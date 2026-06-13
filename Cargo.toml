@@ -25,7 +25,8 @@ axum-server = { version = "0.8", features = ["tls-rustls"] }
 clap = { version = "4", features = ["derive", "env"] }
 hex = "0.4"
 json-patch = "4"
-k8s-openapi = { version = "0.27", features = ["latest"] }
+# Compile against the OLDEST supported cluster (1.33) for forward-compatibility across 1.33–1.36.
+k8s-openapi = { version = "0.27", features = ["v1_33"] }
 kube = { version = "3", default-features = false, features = [
   "client",
   "rustls-tls",

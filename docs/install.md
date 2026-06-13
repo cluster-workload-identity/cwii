@@ -11,7 +11,7 @@ This guide walks platform engineers through installing **cwii** (Cluster Workloa
 
 | Requirement | Detail |
 | --- | --- |
-| **Kubernetes** | `>= 1.24` |
+| **Kubernetes** | **1.33–1.36** (the non-EOL upstream releases; the chart's `kubeVersion` enforces this) |
 | **TLS for the webhook** | [cert-manager](https://cert-manager.io/) is recommended; a Helm `genSignedCert` self-signed fallback is available if you cannot run cert-manager. |
 | **Cluster OIDC** | Your `kube-apiserver` **must** publish a public HTTPS OIDC discovery document and JWKS that the cloud STS endpoints can reach. This is the hard prerequisite — see [./self-hosted-oidc.md](./self-hosted-oidc.md). |
 | **Helm** | `>= 3.8` (for OCI registry support) |

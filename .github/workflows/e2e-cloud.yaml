@@ -28,7 +28,7 @@ jobs:
     env:
       ISSUER_URL: ${{ vars.E2E_ISSUER_URL }}
       OIDC_DIR: /tmp/cwii-e2e/oidc
-      KIND_NODE_IMAGE: kindest/node:v1.30.0
+      KIND_NODE_IMAGE: kindest/node:v1.33.12@sha256:3f5c8443c620245e4d355cfe09e96a91ead32ceaa569d3f1ca9edf0cb2fe2ff4
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -50,7 +50,8 @@ jobs:
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1
         with:
           cluster_name: cwii-e2e
-          node_image: kindest/node:v1.30.0
+          version: v0.32.0
+          node_image: ${{ env.KIND_NODE_IMAGE }}
           config: /tmp/cwii-e2e/kind.yaml
 
       - name: Assert the apiserver advertises our issuer
