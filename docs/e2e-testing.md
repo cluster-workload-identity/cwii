@@ -71,7 +71,7 @@ export ISSUER="https://storage.googleapis.com/${BUCKET}"
 mkdir -p /tmp/oidc && cp sa.key sa.pub /tmp/oidc/
 sed -e "s|__OIDC_DIR__|/tmp/oidc|g" -e "s|__ISSUER_URL__|${ISSUER}|g" \
   e2e/kind-cluster.yaml > /tmp/kind.yaml
-kind create cluster --name cwii-oidc --image kindest/node:v1.30.0 --config /tmp/kind.yaml
+kind create cluster --name cwii-oidc --image kindest/node:v1.33.12 --config /tmp/kind.yaml
 
 # The apiserver now advertises ISSUER and signs with sa.key; capture what it serves.
 kubectl get --raw /.well-known/openid-configuration > openid-configuration
@@ -217,8 +217,11 @@ around them).
 
 ## Troubleshooting
 
-- **apiserver advertises the wrong issuer** → the kind extraArgs didn't take. On Kubernetes ≥ 1.31
-  (kubeadm `v1beta4`) `extraArgs` is a *list*, not a map; adapt `e2e/kind-cluster.yaml` accordingly.
+- **apiserver advertises the wrong issuer** → the kind `extraArgs` didn't take. The committed
+  `e2e/kind-cluster.yaml` uses the kubeadm `v1beta4` list form (Kubernetes 1.31+); on `v1beta3`
+  (≤ 1.30) `extraArgs` is a map instead. If a kubeadm build *appends* your issuer to the default
+  rather than overriding it, the discovery `issuer` is wrong and the workflow's assert step fails —
+  patch the kube-apiserver manifest directly in that case.
 - **`invalid_grant` / audience mismatch** → the projected token `aud` doesn't match the provider's
   allowed audience; check `E2E_GCP_AUDIENCE` / client-id lists.
 - **`Unable to fetch JWKS`** → the bucket objects aren't public or lack `Content-Type: application/json`.

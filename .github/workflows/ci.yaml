@@ -162,7 +162,7 @@ jobs:
           CRD='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
           for f in charts/cwii/ci/*.yaml; do
             echo "== kubeconform $f"
-            helm template cwii charts/cwii -n cwii-system -f "$f" \
+            helm template cwii charts/cwii -n cwii-system --kube-version 1.33.0 -f "$f" \
               | ./kubeconform -strict -summary -ignore-missing-schemas \
                   -schema-location default -schema-location "$CRD"
           done
