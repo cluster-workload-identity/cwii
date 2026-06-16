@@ -8,7 +8,7 @@
 # Base images are pinned by digest for reproducibility (tag kept for readability; Dependabot's
 # docker ecosystem bumps both the tag and the digest).
 # cargo-chef base: lets us cache the dependency build separately from the source build.
-FROM rust:1.96.0-slim-trixie@sha256:082a5849a6870672b5f7a5bf4eddc71723fce38756fd834a0d734a5306a310ab AS chef
+FROM rust:1.96.0-slim-trixie@sha256:3b05f7c617a200c41c3506097f0d15fc193a1c93bfd8f141007b47cac8f95d3c AS chef
 RUN cargo install cargo-chef --locked
 WORKDIR /src
 
