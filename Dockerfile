@@ -30,7 +30,7 @@ COPY . .
 RUN cargo build --release --locked --bin cwii \
  && cp target/release/cwii /cwii
 
-FROM gcr.io/distroless/cc-debian12:nonroot@sha256:b0ae8e989418b458e0f25489bc3be523718938a2b70864cc0f6a00af1ddbd985
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:d3cda6e91129130d7229a1806b6a73d292ef245ab032da7851907798024cefba
 COPY --from=builder /cwii /usr/local/bin/cwii
 USER 65532:65532
 ENTRYPOINT ["/usr/local/bin/cwii"]
