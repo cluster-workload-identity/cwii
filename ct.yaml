@@ -1,0 +1,10 @@
+# chart-testing (ct) configuration.
+chart-dirs:
+  - charts
+target-branch: main
+validate-maintainers: false
+check-version-increment: false
+helm-extra-args: --timeout 120s
+# Use the repo's yamllint config for values.yaml/Chart.yaml instead of ct's stricter built-in one
+# (matches the yamllint CI job: line-length is a warning, one space before inline comments is OK).
+lint-conf: .yamllint.yaml

@@ -1,0 +1,21 @@
+# taplo (TOML) formatting configuration. CI runs `taplo fmt --check`; run `taplo fmt` locally.
+# Format only the workspace's own TOML files.
+include = [
+  "Cargo.toml",
+  "crates/**/Cargo.toml",
+  "deny.toml",
+  "rust-toolchain.toml",
+  "taplo.toml",
+]
+
+# Formatting only — no JSON-schema association/validation (keeps `fmt` offline & deterministic).
+[schema]
+enabled = false
+
+[formatting]
+reorder_keys = false
+reorder_arrays = false
+array_auto_collapse = true
+array_auto_expand = true
+compact_arrays = true
+align_entries = false

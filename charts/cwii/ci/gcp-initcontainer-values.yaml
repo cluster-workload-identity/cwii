@@ -1,0 +1,10 @@
+# GCP init-container delivery (no ConfigMap-write RBAC), AWS/Azure disabled.
+providers:
+  gcp:
+    enabled: true
+    deliveryMode: initContainer
+    defaultAudience: "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc"
+  aws:
+    enabled: false
+  az:
+    enabled: false

@@ -1,0 +1,50 @@
+{{- if not .Values.tls.certManager.enabled }}
+{{- /*
+  Self-signed fallback. The serving cert and CA are generated ONCE in this single template scope and
+  used for both the TLS Secret and the webhook caBundle, so they always match. `lookup` reuses an
+  existing Secret across `helm upgrade` to keep the cert (and therefore caBundle) stable.
+  Note: `helm template`/`--dry-run` cannot lookup, so it regenerates each run — fine for CI linting.
+*/}}
+{{- $secretName := include "cwii.certName" . -}}
+{{- $svc := include "cwii.fullname" . -}}
+{{- $ns := .Release.Namespace -}}
+{{- $fqdn := printf "%s.%s.svc" $svc $ns -}}
+{{- $altNames := list $svc (printf "%s.%s" $svc $ns) $fqdn (printf "%s.cluster.local" $fqdn) -}}
+{{- $days := int .Values.tls.selfSigned.durationDays -}}
+{{- $tlsCrt := "" -}}
+{{- $tlsKey := "" -}}
+{{- $caCrt := "" -}}
+{{- $existing := lookup "v1" "Secret" $ns $secretName -}}
+{{- if and $existing $existing.data (hasKey $existing.data "ca.crt") -}}
+{{- $tlsCrt = index $existing.data "tls.crt" -}}
+{{- $tlsKey = index $existing.data "tls.key" -}}
+{{- $caCrt = index $existing.data "ca.crt" -}}
+{{- else -}}
+{{- $ca := genCA (printf "%s-ca" $svc) $days -}}
+{{- $cert := genSignedCert $fqdn nil $altNames $days $ca -}}
+{{- $tlsCrt = $cert.Cert | b64enc -}}
+{{- $tlsKey = $cert.Key | b64enc -}}
+{{- $caCrt = $ca.Cert | b64enc -}}
+{{- end -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $secretName }}
+  namespace: {{ $ns }}
+  labels:
+    {{- include "cwii.labels" . | nindent 4 }}
+type: kubernetes.io/tls
+data:
+  tls.crt: {{ $tlsCrt }}
+  tls.key: {{ $tlsKey }}
+  ca.crt: {{ $caCrt }}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "cwii.fullname" . }}
+  labels:
+    {{- include "cwii.labels" . | nindent 4 }}
+webhooks:
+  {{- include "cwii.webhooks" (dict "ctx" . "caBundle" $caCrt) | nindent 2 }}
+{{- end }}

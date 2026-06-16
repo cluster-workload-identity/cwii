@@ -1,0 +1,24 @@
+[package]
+name = "cwii-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Provider-agnostic engine for cwii: admission plumbing, annotation resolution, and patch building"
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+axum.workspace = true
+json-patch.workspace = true
+k8s-openapi.workspace = true
+kube.workspace = true
+opentelemetry.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

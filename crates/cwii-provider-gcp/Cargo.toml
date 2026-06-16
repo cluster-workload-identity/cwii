@@ -1,0 +1,17 @@
+[package]
+name = "cwii-provider-gcp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "GCP Workload Identity Federation provider for cwii"
+publish = false
+
+[dependencies]
+cwii-core.workspace = true
+anyhow.workspace = true
+hex.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tracing.workspace = true

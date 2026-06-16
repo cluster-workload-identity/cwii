@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cwii.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cwii.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "cwii.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cwii.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "cwii.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: cwii
+          image: {{ include "cwii.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --addr=0.0.0.0:{{ .Values.service.targetPort }}
+            - --tls-cert=/tls/tls.crt
+            - --tls-key=/tls/tls.key
+            - --mount-root={{ .Values.mountRoot }}
+            - --token-expiration={{ .Values.tokenExpirationSeconds }}
+            - --native-annotations={{ .Values.compat.nativeAnnotations }}
+            - --otel-enabled={{ .Values.otel.enabled }}
+            {{- with .Values.otel.endpoint }}
+            - --otel-endpoint={{ . }}
+            {{- end }}
+            - --gcp-enabled={{ .Values.providers.gcp.enabled }}
+            {{- if .Values.providers.gcp.enabled }}
+            - --gcp-delivery={{ .Values.providers.gcp.deliveryMode | kebabcase }}
+            - --gcp-init-image={{ .Values.providers.gcp.initImage }}
+            - --gcp-verify-image={{ .Values.providers.gcp.verifyImage }}
+            {{- with .Values.providers.gcp.defaultAudience }}
+            - --gcp-default-audience={{ . }}
+            {{- end }}
+            {{- end }}
+            - --aws-enabled={{ .Values.providers.aws.enabled }}
+            {{- if .Values.providers.aws.enabled }}
+            - --aws-default-audience={{ .Values.providers.aws.defaultAudience }}
+            - --aws-verify-image={{ .Values.providers.aws.verifyImage }}
+            {{- end }}
+            - --az-enabled={{ .Values.providers.az.enabled }}
+            {{- if .Values.providers.az.enabled }}
+            - --az-default-audience={{ .Values.providers.az.defaultAudience }}
+            - --az-verify-image={{ .Values.providers.az.verifyImage }}
+            {{- end }}
+          env:
+            - name: RUST_LOG
+              value: {{ .Values.logLevel | quote }}
+          ports:
+            - name: https
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          volumeMounts:
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tls
+          secret:
+            secretName: {{ include "cwii.certName" . }}
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

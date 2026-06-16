@@ -1,0 +1,9 @@
+# hadolint configuration for the Dockerfile.
+failure-threshold: warning
+ignored:
+  # Pinning apt versions in the throwaway builder stage is unnecessary churn.
+  - DL3008
+trustedRegistries:
+  - docker.io
+  - gcr.io
+  - ghcr.io

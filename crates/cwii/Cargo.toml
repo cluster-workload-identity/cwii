@@ -1,0 +1,37 @@
+[package]
+name = "cwii"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Cluster Workload Identity Injector — multi-cloud Kubernetes mutating admission webhook"
+publish = false
+
+[[bin]]
+name = "cwii"
+path = "src/main.rs"
+
+[dependencies]
+cwii-core.workspace = true
+cwii-provider-gcp.workspace = true
+cwii-provider-aws.workspace = true
+cwii-provider-az.workspace = true
+
+anyhow.workspace = true
+axum.workspace = true
+axum-server.workspace = true
+clap.workspace = true
+k8s-openapi.workspace = true
+kube.workspace = true
+opentelemetry.workspace = true
+opentelemetry-otlp.workspace = true
+opentelemetry_sdk.workspace = true
+rustls.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-opentelemetry.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

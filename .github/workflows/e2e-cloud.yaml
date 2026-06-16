@@ -1,0 +1,173 @@
+name: e2e-cloud
+
+# Full end-to-end test: a kind cluster federates real projected tokens to real GCP/AWS/Azure using
+# cwii, asserted via cwii's own verify-enforce init containers. Requires the one-time cloud setup and
+# repo secret/variables documented in docs/e2e-testing.md. No cloud credentials are used in CI — only
+# the OIDC_SIGNING_KEY secret; the test pods authenticate themselves.
+
+on:
+  workflow_dispatch:
+    inputs:
+      providers:
+        description: "Comma-separated providers to test"
+        default: "gcp,aws,az"
+  schedule:
+    - cron: "0 6 * * 1" # weekly Monday 06:00 UTC; remove if you don't want scheduled cloud calls
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-cloud
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    name: e2e (real clouds)
+    runs-on: ubuntu-latest
+    env:
+      ISSUER_URL: ${{ vars.E2E_ISSUER_URL }}
+      OIDC_DIR: /tmp/cwii-e2e/oidc
+      KIND_NODE_IMAGE: kindest/node:v1.33.12@sha256:3f5c8443c620245e4d355cfe09e96a91ead32ceaa569d3f1ca9edf0cb2fe2ff4
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Materialize signing key + render kind config
+        run: |
+          set -euo pipefail
+          test -n "${ISSUER_URL}" || { echo "::error::set the E2E_ISSUER_URL repo variable"; exit 1; }
+          mkdir -p "${OIDC_DIR}"
+          printf '%s' "${{ secrets.OIDC_SIGNING_KEY }}" > "${OIDC_DIR}/sa.key"
+          chmod 600 "${OIDC_DIR}/sa.key"
+          openssl rsa -in "${OIDC_DIR}/sa.key" -pubout -out "${OIDC_DIR}/sa.pub"
+          sed -e "s|__OIDC_DIR__|${OIDC_DIR}|g" -e "s|__ISSUER_URL__|${ISSUER_URL}|g" \
+            e2e/kind-cluster.yaml > /tmp/cwii-e2e/kind.yaml
+          cat /tmp/cwii-e2e/kind.yaml
+
+      - name: Create kind cluster
+        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1
+        with:
+          cluster_name: cwii-e2e
+          version: v0.32.0
+          node_image: ${{ env.KIND_NODE_IMAGE }}
+          config: /tmp/cwii-e2e/kind.yaml
+
+      - name: Assert the apiserver advertises our issuer
+        run: |
+          set -euo pipefail
+          disco=$(kubectl get --raw /.well-known/openid-configuration)
+          echo "$disco"
+          echo "$disco" | grep -q "${ISSUER_URL}" \
+            || { echo "::error::apiserver issuer != ${ISSUER_URL} (kubeadm extraArgs not applied?)"; exit 1; }
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build cwii image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          load: true
+          tags: cwii:e2e
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Load image into kind
+        run: kind load docker-image cwii:e2e --name cwii-e2e
+
+      - name: Install cert-manager
+        run: |
+          set -euo pipefail
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.3/cert-manager.yaml
+          kubectl -n cert-manager rollout status deploy/cert-manager-webhook --timeout=180s
+          kubectl -n cert-manager rollout status deploy/cert-manager-cainjector --timeout=180s
+
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
+      - name: Install cwii (failurePolicy=Fail so a webhook miss can't masquerade as a pass)
+        run: |
+          set -euo pipefail
+          helm install cwii charts/cwii -n cwii-system --create-namespace \
+            --set image.repository=cwii --set image.tag=e2e --set image.pullPolicy=Never \
+            --set webhook.failurePolicy=Fail \
+            --wait --timeout 180s
+          # Wait for cert-manager to inject the caBundle before sending it traffic.
+          for _ in $(seq 1 30); do
+            cab=$(kubectl get mutatingwebhookconfiguration cwii -o jsonpath='{.webhooks[0].clientConfig.caBundle}' 2>/dev/null || true)
+            [ -n "$cab" ] && break
+            sleep 2
+          done
+          test -n "${cab:-}" || { echo "::error::caBundle was not injected"; exit 1; }
+
+      - name: Run federation tests
+        env:
+          PROVIDERS: ${{ github.event.inputs.providers || 'gcp,aws,az' }}
+          E2E_AWS_ROLE_ARN: ${{ vars.E2E_AWS_ROLE_ARN }}
+          E2E_GCP_AUDIENCE: ${{ vars.E2E_GCP_AUDIENCE }}
+          E2E_GCP_SERVICE_ACCOUNT: ${{ vars.E2E_GCP_SERVICE_ACCOUNT }}
+          E2E_AZ_CLIENT_ID: ${{ vars.E2E_AZ_CLIENT_ID }}
+          E2E_AZ_TENANT_ID: ${{ vars.E2E_AZ_TENANT_ID }}
+        run: |
+          set -uo pipefail
+          failed=0
+
+          annotations_for() {
+            case "$1" in
+              gcp)
+                printf '    cwii.dev/gcp-inject: "true"\n'
+                printf '    cwii.dev/gcp-audience: "%s"\n' "$E2E_GCP_AUDIENCE"
+                printf '    cwii.dev/gcp-verify: "true"\n'
+                printf '    cwii.dev/gcp-verify-enforce: "true"\n'
+                [ -n "$E2E_GCP_SERVICE_ACCOUNT" ] && \
+                  printf '    cwii.dev/gcp-service-account: "%s"\n' "$E2E_GCP_SERVICE_ACCOUNT" ;;
+              aws)
+                printf '    cwii.dev/aws-inject: "true"\n'
+                printf '    cwii.dev/aws-role-arn: "%s"\n' "$E2E_AWS_ROLE_ARN"
+                printf '    cwii.dev/aws-verify: "true"\n'
+                printf '    cwii.dev/aws-verify-enforce: "true"\n' ;;
+              az)
+                printf '    cwii.dev/az-inject: "true"\n'
+                printf '    cwii.dev/az-client-id: "%s"\n' "$E2E_AZ_CLIENT_ID"
+                printf '    cwii.dev/az-tenant-id: "%s"\n' "$E2E_AZ_TENANT_ID"
+                printf '    cwii.dev/az-verify: "true"\n'
+                printf '    cwii.dev/az-verify-enforce: "true"\n' ;;
+            esac
+          }
+
+          run_provider() {
+            local p="$1" ns="e2e-$1"
+            echo "::group::test ${p}"
+            kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f -
+            kubectl create serviceaccount cwii-e2e -n "$ns" --dry-run=client -o yaml | kubectl apply -f -
+            {
+              printf 'apiVersion: v1\nkind: Pod\nmetadata:\n  name: e2e\n  namespace: %s\n  annotations:\n' "$ns"
+              annotations_for "$p"
+              printf 'spec:\n  serviceAccountName: cwii-e2e\n  restartPolicy: Never\n  containers:\n'
+              printf '    - name: main\n      image: registry.k8s.io/pause:3.9\n'
+            } | kubectl apply -f -
+
+            # Injection must actually have happened (guards against a silent skip).
+            sleep 2
+            inits=$(kubectl get pod e2e -n "$ns" -o jsonpath='{.spec.initContainers[*].name}' 2>/dev/null || true)
+            echo "init containers: ${inits}"
+            echo "$inits" | grep -q "cwii-${p}-verify" \
+              || { echo "::error::${p}: verify init container was not injected"; failed=1; echo "::endgroup::"; return; }
+
+            if kubectl wait --for=condition=Ready "pod/e2e" -n "$ns" --timeout=300s; then
+              echo "${p}: OK — federation succeeded"
+            else
+              echo "::error::${p}: federation failed (pod never became Ready)"
+              kubectl describe "pod/e2e" -n "$ns" || true
+              kubectl logs "pod/e2e" -n "$ns" -c "cwii-${p}-verify" --tail=80 || true
+              failed=1
+            fi
+            echo "::endgroup::"
+          }
+
+          IFS=',' read -ra LIST <<< "$PROVIDERS"
+          for p in "${LIST[@]}"; do
+            run_provider "$(echo "$p" | tr -d '[:space:]')"
+          done
+          exit "$failed"
+
+      - name: Webhook logs (always)
+        if: always()
+        run: kubectl logs -n cwii-system -l app.kubernetes.io/name=cwii --tail=200 || true

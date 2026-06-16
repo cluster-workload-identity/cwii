@@ -1,0 +1,13 @@
+# Default install path: cert-manager-issued webhook cert, all providers, GCP configMap delivery.
+tls:
+  certManager:
+    enabled: true
+providers:
+  gcp:
+    enabled: true
+    deliveryMode: configMap
+    defaultAudience: "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc"
+  aws:
+    enabled: true
+  az:
+    enabled: true
